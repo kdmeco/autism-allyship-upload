@@ -38,7 +38,14 @@ const UPLOAD_PATH = '/upload';
 const REMOVE_PATH = '/remove';
 
 const ALLOWED_PREFIX = 'assets/uploads/';
-const ALLOWED_BRANCHES = ['main', 'staging', 'dev'];
+// Production handover, 3 September 2026: main only. Until then this also
+// accepted staging and dev so the preview admins could upload to their own
+// branch. The Worker holds a GitHub token with full repo scope, so once the
+// foundation owns the site there is no reason for an admin page to be able to
+// write anywhere except production. The admin helper stopped asking for a
+// branch at the same time, but the check that matters is this one: it is the
+// only side the client cannot talk its way past.
+const ALLOWED_BRANCHES = ['main'];
 const EXTENSIONS: Record<string, string> = {
 	'image/webp': '.webp',
 	'image/jpeg': '.jpg',
@@ -134,7 +141,7 @@ export default {
 
 			const branch = body.branch || env.GITHUB_BRANCH;
 			if (!ALLOWED_BRANCHES.includes(branch)) {
-				return json({ error: 'Files can only be removed from main, staging or dev' }, 400, origin);
+				return json({ error: 'Files can only be removed from main' }, 400, origin);
 			}
 
 			try {
@@ -184,7 +191,7 @@ export default {
 
 		const branch = body.branch || env.GITHUB_BRANCH;
 		if (!ALLOWED_BRANCHES.includes(branch)) {
-			return json({ error: 'Images can only be uploaded to main, staging or dev' }, 400, origin);
+			return json({ error: 'Images can only be uploaded to main' }, 400, origin);
 		}
 
 		try {

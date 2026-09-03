@@ -171,6 +171,14 @@ describe('the upload worker', () => {
 		expect(response.status).toBe(400);
 	});
 
+	it('rejects staging and dev, which were allowed before the handover', async () => {
+		const token = await mintToken({});
+		for (const branch of ['staging', 'dev']) {
+			const response = await post(uploadBody({ branch }), { Authorization: 'Bearer ' + token });
+			expect(response.status).toBe(400);
+		}
+	});
+
 	it('answers 404 on the root path, which the asset layer owns', async () => {
 		const token = await mintToken({});
 		const response = await post(uploadBody(), { Authorization: 'Bearer ' + token }, '/');
@@ -183,9 +191,12 @@ describe('the upload worker', () => {
 		expect(response.status).toBe(403);
 	});
 
+	// The staging origin is still ours and still gets a CORS echo. What changed
+	// at handover is the branch: this now commits to main like everything else,
+	// because the body no longer names one and the Worker defaults to main.
 	it('echoes a staging origin and commits for a signed in admin', async () => {
 		const token = await mintToken({});
-		const response = await post(uploadBody({ branch: 'staging' }), {
+		const response = await post(uploadBody(), {
 			Authorization: 'Bearer ' + token,
 			Origin: 'https://staging.autism-allyship.pages.dev',
 		});
@@ -263,6 +274,14 @@ describe('the upload worker', () => {
 		const token = await mintToken({});
 		const response = await post(JSON.stringify({ paths: ['assets/uploads/blog/img-a.webp'], branch: 'feat/evil' }), { Authorization: 'Bearer ' + token }, '/remove');
 		expect(response.status).toBe(400);
+	});
+
+	it('refuses removal from staging and dev since the handover', async () => {
+		const token = await mintToken({});
+		for (const branch of ['staging', 'dev']) {
+			const response = await post(JSON.stringify({ paths: ['assets/uploads/blog/img-a.webp'], branch }), { Authorization: 'Bearer ' + token }, '/remove');
+			expect(response.status).toBe(400);
+		}
 	});
 
 	it('allows the authorization header in preflights', async () => {
